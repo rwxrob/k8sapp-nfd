@@ -87,13 +87,33 @@ data:
 
 ### Installing
 
-***⚠️  Be sure to change into the proper context (dev, prod, etc.)!***
+Be sure to change into the proper cluster/context (dev, prod, etc.)!
 
 ```
-kubectl apply -f nfd.yaml
+k apply -f nfd.yaml
 ```
 
 Note that the `--namespace` is not needed since it has been explicitly added to all the resources in the `nfd.yaml` file.
+
+After installing, verify stuff has installed properly using your
+favorite commands.
+
+```
+k config set-context --current --namespace node-feature-discovery
+k get cm nfd-worker-conf -o yaml
+k get node kind-worker -o yaml  |z yq .metadata.labels
+```
+
+Notice that you have the following (and not more) which means that the
+regular expression label filter is working::
+
+```
+feature.node.kubernetes.io/pci-0300_15ad.present: "true"
+feature.node.kubernetes.io/system-os_release.ID: ubuntu
+feature.node.kubernetes.io/system-os_release.VERSION_ID: "21.10"
+feature.node.kubernetes.io/system-os_release.VERSION_ID.major: "21"
+feature.node.kubernetes.io/system-os_release.VERSION_ID.minor: "10"
+```
 
 ### Updating
 
