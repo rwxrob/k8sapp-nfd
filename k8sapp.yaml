@@ -1,5 +1,0 @@
-longname: hpc/nfd
-shortname: nfd
-title: Node Feature Discovery with Limited Labels and SecurityContext
-version: v0.1.0
-repo: https://github.com/rwxrob/k8sapp-nfd

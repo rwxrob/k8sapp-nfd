@@ -1,20 +1,19 @@
-# K8SAPP: Node Feature Discovery with Limited Labels and SecurityContext
+# K8SAPP: Node Feature Discovery with Reduced Labels and Resource Limits
 
 This Kubernetes system application provides the standard Kubernetes Node
 Feature Discovery annotations/labels but limits the ones included and
-add minimal SecurityContext values. NFD fulfills a critical dependency
-for NVIDIA GPU Feature Discovery.
+add minimal resource constraints. 
+
+> ⚡ NFD fulfills a critical dependency for NVIDIA GPU Feature
+Discovery and should not be upgraded unless GFD is also included in the
+upgrade if you use it.
 
 ## Application Repo Organization
 
-This repo follows the K8SAPP conventions:
-
 * `README.md` - description, notes, and references
-* `k8sapp` - simple to fetch, config, install, update, uninstall, and check
-* `k8sapp.yaml` - metadata about this application
-
-This repo also contains the original project source for the Node
-Feature Discovery project (from the Kubernetes SIG). 
+* `CHANGELOG.md` - changes between vendor versions and customizations
+* `check` - check for latest update
+* `get` - overwrite `nfd.yaml` with latest
 
 ## Application Management Procedures
 
@@ -27,12 +26,12 @@ updated.
 
 The Helm chart and Kustomize versions are inconsistent. For example, the
 Helm chart grants additional ClusterRole permissions. For this reason,
-this k8sapp uses Kustomize as a base.
+this k8sapp uses Kustomize as a base. Remember to change the `ref` to
+the latest version (output of `check`).
 
-```
-kubectl kustomize \
-  "https://github.com/kubernetes-sigs/node-feature-discovery/deployment/overlays/default?ref=v0.9.0" > "nfd.yaml"
-```
+The `get` script will overwrite the `nfd.yaml` file with the
+latest so that a `git diff nfd.yaml` file can show all the precise
+changes.
 
 ### Reviewing Code and Container Images
 
@@ -40,26 +39,14 @@ Observations after review of the default NFD source code and
 configurations:
 
 * `node-feature-discovery` default namespace created
+* Creates a CRD with reasonable permissions
 * No resource constraints of any kind
 
 Only a single image is used:
 
-  `k8s.gcr.io/nfd/node-feature-discovery:v0.9.0`
-
-TODO: report on security vetting of the image
+  `k8s.gcr.io/nfd/node-feature-discovery:v0.11.0`
 
 ### Customizing and Configuring
-
-* Change the namespace values to 'nfd'
-
-```bash
-while IFS= read -r line; do 
-  line=${line//namespace: node-feature-discovery/namespace: nfd}
-  line=${line//name: node-feature-discovery/name: nfd}
-  echo "$line"
-done < nfd.yaml > nfd.yaml~
-mv nfd.yaml~ nfd.yaml
-```
 
 * Add resource constraints to both worker and master DaemonSets:
 
@@ -110,15 +97,22 @@ Note that the `--namespace` is not needed since it has been explicitly added to 
 
 ### Updating
 
-No updates currently available.
+* Download the latest `nfd.yaml` with `get` script
+* Run `git diff nfd.yaml` to see what has changed
+* Summarize changes in CHANGELOG.md
+* Add the whitelist change (see above)
+* Add the resource constraints (see above)
+* Pull the latest image and push to home image registry
+* Uninstall previous (see below)
+* Install new (see above)
 
 ### Uninstalling
 
 ```yaml
-kubectl delete ns nfd
+kubectl delete ns node-feature-discovery
+kubectl delete crd nodefeaturerules.nfd.k8s-sigs.io
 kubectl delete clusterrole nfd-master
 kubectl delete clusterrolebinding nfd-master
-:q!
 ```
 
 ### Check for Updates
@@ -136,8 +130,3 @@ curl -sSL https://api.github.com/repos/kubernetes-sigs/node-feature-discovery/re
   <https://kubernetes-sigs.github.io/node-feature-discovery/stable/get-started/index.html>
 * GitHub - kubernetes-sigs/node-feature-discovery: Node feature discovery for Kubernetes  
   <https://github.com/kubernetes-sigs/node-feature-discovery>
-
-## Checklist
-
-- [ ] Download, review, scan, and mirror container images
-- [ ] Add an entry to the main `k8sapps` manifest meta repo 
